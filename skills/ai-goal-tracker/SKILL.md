@@ -1,66 +1,81 @@
 ---
 name: ai-goal-tracker
-description: Pull goal tracker templates (goal.md, steps.md, current.md) from the remote repo and place them in a working directory. Use when starting a new project that needs the goal-tracking template set.
+description: Pull goal tracker templates (goal.md, steps.md, current.md) from git and initialize project goal. Use when starting a project that needs structured goal tracking.
 ---
 
-# AI Goal Tracker - Template Pull Skill
+# AI Goal Tracker - Pull Templates Skill
 
-Use this skill when starting a new project and need the goal-tracking template files (goal.md, steps.md, current.md) in a working directory.
+Use this skill when starting a new project and need the goal-tracking template files (goal.md, steps.md, current.md).
 
 ## When to Use
 
 - Starting a new project or task
 - A fresh session needs the goal-tracking files
 - User asks for "goal tracker templates" or similar
+- Project needs structured goal, step, and status tracking
 
 ## Steps
 
-### 1. Clone the latest templates
+### 1. Determine target directory
 
-Run in the target directory (or parent directory if creating a new project structure):
+Ask the user where they want the templates, or default to the current working directory.
 
-```bash
-export PATH="/c/Program Files/GitHub CLI:$PATH"
-mkdir -p . && git clone https://github.com/joschemd/ai-goal-tracker-template.git __goal_tracker_tmp__ && cp __goal_tracker_tmp__/templates/*.md . && rm -rf __goal_tracker_tmp__
-```
+### 2. Pull templates from git
 
-Or to pull into a subdirectory:
+Run the following command to clone just the templates directory and copy them to the target:
 
 ```bash
 export PATH="/c/Program Files/GitHub CLI:$PATH"
-mkdir -p templates && cd templates && git clone https://github.com/joschemd/ai-goal-tracker-template.git __goal_tracker_tmp__ && cp __goal_tracker_tmp__/templates/*.md . && rm -rf __goal_tracker_tmp__
+TMPDIR=$(mktemp -d)
+cd "$TMPDIR" && git clone --depth 1 https://github.com/joschemd/ai-goal-tracker-template.git __tmp__ && \
+  cp __tmp__/templates/*.md "$TARGET_DIR"/ && \
+  rm -rf "$TMPDIR"
 ```
 
-### 2. Verify files were pulled
+If git is not installed, download the zip:
+```bash
+curl -L https://github.com/joschemd/ai-goal-tracker-template/archive/refs/heads/main.zip -o /tmp/templates.zip
+unzip -j /tmp/templates.zip "*/templates/*.md" -d "$TARGET_DIR"
+rm /tmp/templates.zip
+```
 
-Check that all three files are present:
+### 3. Verify files were pulled
 
 ```bash
-ls goal.md steps.md current.md
+ls "$TARGET_DIR"/goal.md "$TARGET_DIR"/steps.md "$TARGET_DIR"/current.md
 ```
 
-### 3. Initialize the goal (if not already done)
+### 4. Initialize the goal document (if not already filled in)
 
-If goal.md is still the template, work with the user to fill in:
-- Intent
-- Desired End State
-- Success Criteria
-- Relevant Context
+Read goal.md - if it still contains all the template placeholders, ask the user to define:
+- **Intent**: One sentence describing what the project is about
+- **Why**: Why does this matter? What problem does it solve?
+- **Desired End State**: What does "done" look like?
+- **Success Criteria**: How do we know we succeeded?
+- **Relevant Context**: Any key facts or dependencies
 
-### 4. Initialize steps and current
+Fill these in collaboratively with the user based on their answers.
 
-- Set initial steps in steps.md based on the goal
-- Set current.md to document the starting state
+### 5. Initialize steps and current
+
+- Create initial steps in steps.md based on the defined goal
+- Set current.md to document the starting state with:
+  - Last Update: current timestamp
+  - What Changed: initial setup
+  - Current Focus: ready to begin first step
+  - Blockers: none yet
+  - Next Actions: the first step from steps.md
 
 ## Files
 
-The repo contains:
+The repo contains (https://github.com/joschemd/ai-goal-tracker-template):
 - `templates/goal.md` — Goal definition template
-- `templates/steps.md` — Step tracking with status markers
-- `templates/current.md` — Current status and blockers
+- `templates/steps.md` — Step tracking with status markers ([ ], [~], [x], [-], [!])
+- `templates/current.md` — Current status, blockers, and next actions
 
 ## Notes
 
 - The repo is public, so no authentication is required for cloning
-- Use `git pull` within an existing clone to get updates to the templates
-- If git is not installed on the system, use the `winget`/`choco` installer or download manually from https://github.com/joschemd/ai-goal-tracker-template
+- Use `git pull` within an existing clone to get template updates
+- If git is not installed, use `winget install GitHub.cli` or download manually
+- After this skill runs, the agent should keep steps.md and current.md up to date as work progresses
